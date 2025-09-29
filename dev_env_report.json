@@ -1,0 +1,103 @@
+﻿{
+    "Timestamp":  "2025-09-29 19:17:05",
+    "System":  {
+                   "Hostname":  "MYLAPTOP",
+                   "OS":  "Microsoft Windows 11 Pro",
+                   "OSVersion":  "10.0.26100",
+                   "CPU":  "Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz",
+                   "RAM_GB":  32,
+                   "Disk_GB_Free":  831.89,
+                   "PythonPath":  "C:\\Users\\loved\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe",
+                   "VscodePath":  "C:\\Users\\loved\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\code.cmd"
+               },
+    "Commands":  [
+                     {
+                         "cmd":  "python",
+                         "version":  {
+
+                                     },
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "pip",
+                         "version":  "N/A",
+                         "exists":  false
+                     },
+                     {
+                         "cmd":  "node",
+                         "version":  "v19.9.0",
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "npm",
+                         "version":  "9.6.3",
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "npx",
+                         "version":  "9.6.3",
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "git",
+                         "version":  "git version 2.51.0.windows.1",
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "code",
+                         "version":  "1.104.1",
+                         "exists":  true
+                     },
+                     {
+                         "cmd":  "docker",
+                         "version":  "N/A",
+                         "exists":  false
+                     },
+                     {
+                         "cmd":  "blender",
+                         "version":  "N/A",
+                         "exists":  false
+                     },
+                     {
+                         "cmd":  "ros2",
+                         "version":  "N/A",
+                         "exists":  false
+                     },
+                     {
+                         "cmd":  "conda",
+                         "version":  "N/A",
+                         "exists":  false
+                     }
+                 ],
+    "GPU":  [
+                {
+                    "Name":  "Intel(R) UHD Graphics 630",
+                    "AdapterRAM":  1073741824,
+                    "DriverVersion":  "31.0.101.2127"
+                },
+                {
+                    "Name":  "NVIDIA GeForce GTX 1650",
+                    "AdapterRAM":  4293918720,
+                    "DriverVersion":  "32.0.15.5599"
+                }
+            ],
+    "VSCodeExtensions":  [
+                             "github.copilot",
+                             "github.copilot-chat",
+                             "hollowtree.vue-snippets",
+                             "ms-python.debugpy",
+                             "ms-python.python",
+                             "ms-python.vscode-pylance",
+                             "ms-python.vscode-python-envs",
+                             "octref.vetur",
+                             "sdras.vue-vscode-snippets",
+                             "vue.volar"
+                         ],
+    "CUDA":  "N/A",
+    "Torch":  {
+
+              },
+    "ListeningPorts":  {
+
+                       }
+}

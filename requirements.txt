@@ -1,0 +1,12 @@
+fastapi==0.110.0
+uvicorn==0.27.1
+python-multipart==0.0.9
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+python-dotenv
+GitPython
+blender-stubs # Blender Python API type hints
+rclpy # ROS2 Python client library
