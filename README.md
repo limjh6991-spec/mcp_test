@@ -171,7 +171,17 @@ api_url = "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-
    conda create -n mcp_env python=3.11
    ```
 
-## 📈 향후 계획
+## � Daily Logs
+
+프로젝트의 일일 진행 상황과 주요 업데이트를 기록합니다.
+
+### 최근 업데이트
+- **2025-09-30**: [MCP 로봇 시스템 완료](./daily_log/2025-09-30_mcp_robot_system_completion.md) - 성능 최적화 및 GitHub 업로드 완료
+
+### 로그 폴더
+📁 [`daily_log/`](./daily_log/) - 모든 일일 작업 로그 보기
+
+## �📈 향후 계획
 
 ### 단기 목표
 - [ ] HuggingFace API 키 설정으로 실제 AI 이미지 생성
