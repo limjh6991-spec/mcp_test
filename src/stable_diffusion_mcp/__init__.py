@@ -8,11 +8,27 @@ from typing import Optional
 import base64
 from io import BytesIO
 from PIL import Image
+import requests
+import asyncio
 
-app = FastAPI(title="Stable Diffusion MCP", version="1.0.0")
+app = FastAPI(title="Stable Diffusion MCP (Cloud Enhanced)", version="2.0.0")
 
 # 글로벌 파이프라인 변수
 pipeline = None
+
+# 클라우드 API 설정
+CLOUD_APIS = {
+    'huggingface': {
+        'enabled': True,
+        'url': 'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1',
+        'key': os.getenv('HF_API_KEY', 'hf_dummy')
+    },
+    'stability': {
+        'enabled': bool(os.getenv('STABILITY_API_KEY')),
+        'url': 'https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image',
+        'key': os.getenv('STABILITY_API_KEY')
+    }
+}
 
 class ImageRequest(BaseModel):
     prompt: str
@@ -61,10 +77,52 @@ async def startup_event():
     if not success:
         print("경고: Stable Diffusion 파이프라인 초기화 실패. 더미 모드로 실행됩니다.")
 
+async def generate_with_huggingface(prompt: str, **kwargs):
+    """HuggingFace Inference API로 이미지 생성 (무료, 빠름)"""
+    api_config = CLOUD_APIS['huggingface']
+    headers = {"Authorization": f"Bearer {api_config['key']}"}
+    payload = {"inputs": prompt}
+    
+    response = requests.post(api_config['url'], headers=headers, json=payload, timeout=30)
+    
+    if response.status_code == 200:
+        return response.content
+    else:
+        raise Exception(f"HuggingFace API 오류: {response.status_code}")
+
+async def generate_with_stability(prompt: str, **kwargs):
+    """Stability AI API로 이미지 생성 (유료, 최고품질)"""
+    api_config = CLOUD_APIS['stability']
+    if not api_config['enabled']:
+        raise Exception("Stability API 키 없음")
+    
+    headers = {
+        "Authorization": f"Bearer {api_config['key']}",
+        "Content-Type": "application/json"
+    }
+    
+    width, height = map(int, kwargs.get('resolution', '1024x1024').split('x'))
+    payload = {
+        "text_prompts": [{"text": prompt}],
+        "cfg_scale": kwargs.get('guidance_scale', 7.5),
+        "steps": kwargs.get('num_inference_steps', 20),
+        "width": width,
+        "height": height
+    }
+    
+    response = requests.post(api_config['url'], headers=headers, json=payload, timeout=60)
+    
+    if response.status_code == 200:
+        data = response.json()
+        return base64.b64decode(data['artifacts'][0]['base64'])
+    else:
+        raise Exception(f"Stability API 오류: {response.status_code}")
+
 @app.post('/create_robot_image', response_model=ImageResponse)
 async def create_robot_image(request: ImageRequest):
     """
     프롬프트를 기반으로 3D 로봇 이미지 생성
+    우선순위: HuggingFace API → Stability AI → 로컬 → 더미
     """
     start_time = datetime.now()
     
@@ -76,27 +134,69 @@ async def create_robot_image(request: ImageRequest):
         output_dir = "generated_images"
         os.makedirs(output_dir, exist_ok=True)
         
-        if pipeline is None:
-            # 더미 이미지 생성 (파이프라인이 없는 경우)
-            image = Image.new('RGB', (width, height), color='lightgray')
-            image_path = os.path.join(output_dir, f"dummy_robot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        image_data = None
+        api_used = "none"
+        
+        # 1순위: HuggingFace API (무료, 빠름)
+        try:
+            print("🚀 HuggingFace API 시도 중...")
+            image_data = await generate_with_huggingface(request.prompt, resolution=request.resolution)
+            api_used = "huggingface"
+            print("✅ HuggingFace API 성공!")
+        except Exception as e:
+            print(f"❌ HuggingFace API 실패: {e}")
+            
+            # 2순위: Stability AI API (유료, 고품질)
+            try:
+                print("🚀 Stability AI API 시도 중...")
+                image_data = await generate_with_stability(request.prompt, 
+                                                         resolution=request.resolution,
+                                                         guidance_scale=request.guidance_scale,
+                                                         num_inference_steps=request.num_inference_steps)
+                api_used = "stability"
+                print("✅ Stability AI API 성공!")
+            except Exception as e2:
+                print(f"❌ Stability AI API 실패: {e2}")
+                
+                # 3순위: 로컬 파이프라인
+                if pipeline is not None:
+                    try:
+                        print("🚀 로컬 파이프라인 시도 중...")
+                        generator = torch.Generator().manual_seed(request.seed) if request.seed else None
+                        
+                        image = pipeline(
+                            prompt=request.prompt,
+                            negative_prompt=request.negative_prompt,
+                            num_inference_steps=request.num_inference_steps,
+                            guidance_scale=request.guidance_scale,
+                            width=width,
+                            height=height,
+                            generator=generator
+                        ).images[0]
+                        
+                        buffered = BytesIO()
+                        image.save(buffered, format="PNG")
+                        image_data = buffered.getvalue()
+                        api_used = "local"
+                        print("✅ 로컬 파이프라인 성공!")
+                    except Exception as e3:
+                        print(f"❌ 로컬 파이프라인 실패: {e3}")
+        
+        # 이미지 처리
+        if image_data:
+            image = Image.open(BytesIO(image_data))
         else:
-            # 실제 이미지 생성
-            generator = torch.Generator().manual_seed(request.seed) if request.seed else None
-            
-            image = pipeline(
-                prompt=request.prompt,
-                negative_prompt=request.negative_prompt,
-                num_inference_steps=request.num_inference_steps,
-                guidance_scale=request.guidance_scale,
-                width=width,
-                height=height,
-                generator=generator
-            ).images[0]
-            
-            # 이미지 저장
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            image_path = os.path.join(output_dir, f"robot_{timestamp}.png")
+            # 4순위: 더미 이미지 (최종 백업)
+            print("🔧 더미 이미지 생성 중...")
+            image = Image.new('RGB', (width, height), color='lightblue')
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")
+            image_data = buffered.getvalue()
+            api_used = "dummy"
+        
+        # 이미지 저장
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        image_path = os.path.join(output_dir, f"robot_{api_used}_{timestamp}.png")
         
         image.save(image_path)
         
@@ -115,8 +215,9 @@ async def create_robot_image(request: ImageRequest):
             "steps": request.num_inference_steps,
             "guidance_scale": request.guidance_scale,
             "seed": request.seed,
+            "api_used": api_used,
             "device": "cuda" if torch.cuda.is_available() else "cpu",
-            "model": "stabilityai/stable-diffusion-2-1" if pipeline else "dummy",
+            "model": f"{api_used}-api" if api_used != "local" else "stabilityai/stable-diffusion-2-1",
             "timestamp": datetime.now().isoformat()
         }
         

@@ -6,7 +6,7 @@ print("Generating robot arm image...")
 
 # 저장된 프롬프트 읽기
 try:
-    with open('current_prompt.txt', 'r', encoding='utf-8') as f:
+    with open('robot_arm_prompt.txt', 'r', encoding='utf-8') as f:
         prompt = f.read().strip()
     
     print(f"Using prompt: {prompt[:100]}...")

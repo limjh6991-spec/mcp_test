@@ -74,6 +74,11 @@ tmp/
 generated_images/
 current_prompt.txt
 robot_arm_prompt.txt
+blender_automation_script.py
+quick_test.py
+test_fast_generation.py
+simple_sd_server.py
+cloud_image_gen.py
 
 # Model files (too large for git)
 *.pt
